@@ -2,25 +2,32 @@ name: Update Threat Intelligence Data
 
 on:
   schedule:
-    - cron: '0 */12 * * *'  # Her 12 saatte bir çalıştır
-  workflow_dispatch:  # Manuel tetikleme için
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
 
+permissions: # Açıkça izinleri belirt
+  contents: write # Sadece içerik yazma izni
+  id-token: write # OIDC token için
+  
 jobs:
   update-threat-intel:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3 # v3 kullan (güvenlik güncellemeleri için)
+      with:
+        fetch-depth: 1 # Sadece son commit'i al
     
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.9'
+        check-latest: true # Güvenlik yamaları için son sürümü kontrol et
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install stix2 requests pyyaml
+        pip install --no-cache-dir stix2 requests pyyaml
     
     - name: Update threat intelligence data
       env:
@@ -30,9 +37,9 @@ jobs:
         mkdir -p data
         python stix_creator.py
     
-    - name: Commit and push if changes
+    - name: Commit and push changes
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
         git add data/threat_intel.json
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Update threat intelligence data" && git push)
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Update threat intelligence data [skip ci]" && git push)
